@@ -1,0 +1,5 @@
+.env.local
+.env.prod
+.claude
+app/.env
+.DS_Store
