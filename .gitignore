@@ -1,5 +1,43 @@
+# Environment variables (keep .example files)
+.env
 .env.local
 .env.prod
-.claude
 app/.env
+ops/.env
+!.env.example
+!app/.env.example
+!ops/.env.example
+
+# IDE and editor files
+.claude
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+yarn-error.log
+npm-debug.log*
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+logs/
+*.log
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Build outputs
+dist/
+build/
+out/

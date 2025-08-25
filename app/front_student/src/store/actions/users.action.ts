@@ -6,7 +6,7 @@ export const GET_USERS: string = "GET_USERS";
 export const REMOVE_ADMIN: string = "REMOVE_ADMIN";
 
 const instance = axios.create({
-    baseURL: 'http://' + process.env.REACT_APP_API_URL,
+    baseURL: process.env.REACT_APP_API_URL || '/api',
     timeout: 5000,
     headers: {}
 });

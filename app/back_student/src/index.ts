@@ -8,6 +8,8 @@ import * as swaggerJSDoc from 'swagger-jsdoc';
 import * as swaggerStats from 'swagger-stats';
 import * as swaggerUi from 'swagger-ui-express';
 import {createConnection} from 'typeorm';
+
+console.log('Starting API server...');
 import routes from './routes';
 
 const options = {
@@ -52,4 +54,7 @@ createConnection()
       console.log('Server started on port 3000!');
     });
   })
-  .catch(e => console.log(e));
+  .catch(e => {
+    console.error('Error connecting to database:', e);
+    process.exit(1);
+  });
