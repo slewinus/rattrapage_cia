@@ -40,7 +40,8 @@ help:
 	@echo ""
 	@echo "$(YELLOW)📍 URLs d'accès:$(NC)"
 	@echo "  Frontend:  $(GREEN)http://localhost:8080$(NC)"
-	@echo "  Grafana:   $(GREEN)http://localhost:3000$(NC) (admin/ChangeMe#2025)"
+	@echo "  Grafana:   $(GREEN)http://localhost:3000$(NC) (admin/GrafanaAdmin2025!)"
+	@echo "  Gitea:     $(GREEN)http://localhost:3001$(NC)"
 	@echo "  Portainer: $(GREEN)http://localhost:9000$(NC)"
 	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
 
@@ -52,6 +53,7 @@ start: ops-up app-up
 	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
 	@echo "  Frontend:  $(GREEN)http://localhost:8080$(NC)"
 	@echo "  Grafana:   $(GREEN)http://localhost:3000$(NC)"
+	@echo "  Gitea:     $(GREEN)http://localhost:3001$(NC)"
 	@echo "  Portainer: $(GREEN)http://localhost:9000$(NC)"
 	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
 
@@ -136,7 +138,19 @@ shell-api:
 	@docker compose -f $(APP_COMPOSE) exec api sh
 
 shell-db:
-	@docker compose -f $(APP_COMPOSE) exec db mariadb -uroot -proot dev_db
+	@docker compose -f $(APP_COMPOSE) exec db mariadb -uroot -p$$DB_PASSWORD $$DB_NAME
+
+shell-gitea: ## Accéder au shell Gitea
+	@echo "$(GREEN)Connexion au container Gitea...$(NC)"
+	@docker exec -it cia-ops-gitea-1 /bin/sh
+
+gitea-admin: ## Créer un compte admin Gitea
+	@echo "$(GREEN)Création du compte admin Gitea...$(NC)"
+	@docker exec cia-ops-gitea-1 gitea admin user create \
+		--username $${GITEA_ADMIN_USER:-gitea_admin} \
+		--password $${GITEA_ADMIN_PASSWORD:-GiteaAdmin2025!} \
+		--email $${GITEA_ADMIN_EMAIL:-admin@gitea.local} \
+		--admin || echo "Admin might already exist"
 
 db-reset:
 	@docker compose -f $(APP_COMPOSE) down -v

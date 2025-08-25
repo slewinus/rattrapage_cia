@@ -76,6 +76,8 @@ make start   # Lancement des services
 | **Grafana** | http://localhost:3000 | User: `admin`<br>Pass: `GrafanaAdmin2025!` |
 | **Loki (Logs)** | http://localhost:3100 | Accessible via Grafana |
 | **Portainer** | http://localhost:9000 | Pass: `PortainerAdmin2025!` |
+| **Gitea** | http://localhost:3001 | User: `gitea_admin`<br>Pass: `GiteaAdmin2025!` |
+| **Gitea SSH** | `ssh://git@localhost:2222` | Configure SSH keys in Gitea |
 
 ## ⚙️ Configuration
 
@@ -106,6 +108,15 @@ REACT_APP_ENVIRONMENT=production
 GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=GrafanaAdmin2025!
 PORTAINER_ADMIN_PASSWORD=PortainerAdmin2025!
+```
+
+#### 🔧 Gitea (Git Server)
+```env
+GITEA_WEB_PORT=3001
+GITEA_SSH_PORT=2222
+GITEA_ADMIN_USER=gitea_admin
+GITEA_ADMIN_PASSWORD=GiteaAdmin2025!
+GITEA_ADMIN_EMAIL=admin@gitea.local
 ```
 
 ### Modification des mots de passe
@@ -139,6 +150,12 @@ make db-reset    # Réinitialise la base de données
 ```bash
 make shell-api   # Shell dans le container API
 make shell-db    # Console MySQL
+make shell-gitea # Shell dans le container Gitea
+```
+
+### Gitea
+```bash
+make gitea-admin # Créer le compte admin Gitea (après le premier démarrage)
 ```
 
 ## 📈 Monitoring avec Grafana
