@@ -103,3 +103,5 @@ curl -X POST http://localhost:8080/api/auth/login \
 3. Ne commitez jamais les fichiers `.env` avec des vrais mots de passe
 4. Activez l'authentification à deux facteurs si disponible
 5. Limitez l'accès aux ports en production (utilisez un reverse proxy)
+
+- Identifiants par défaut: admin / TraefikAdmin2025!.

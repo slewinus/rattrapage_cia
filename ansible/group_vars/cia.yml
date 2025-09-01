@@ -1,0 +1,6 @@
+---
+# Global vars for CIA deployment
+acme_email: oscar.robert-besle@epitech.eu
+traefik_http_port: 80
+traefik_https_port: 443
+

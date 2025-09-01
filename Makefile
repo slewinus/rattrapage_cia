@@ -37,6 +37,9 @@ help:
 	@echo ""
 	@echo "$(YELLOW)> Démarrage ultra-rapide:$(NC)"
 	@echo "  $(GREEN)make quick-start$(NC) -> Build et lance tout en une commande"
+	@echo "  $(GREEN)make cloud-up$(NC)     -> Provision Azure (Terraform) + Ansible auto si activé"
+	@echo "  $(GREEN)make cloud-deploy$(NC) -> Lance Ansible sur la VM créée"
+	@echo "  $(GREEN)make cloud-destroy$(NC)-> Détruit l'infra Azure (Terraform destroy)"
 	@echo ""
 	@echo "$(YELLOW)> URLs d'accès:$(NC)"
 	@echo "  Frontend:  $(GREEN)https://app.localhost$(NC)"
@@ -134,6 +137,36 @@ clean:
 	@docker compose -f $(OPS_COMPOSE) down -v
 	@docker system prune -f
 	@echo "$(GREEN)OK Nettoyage terminé$(NC)"
+
+# ====== Cloud (Azure) ======
+.PHONY: cloud-up cloud-deploy cloud-destroy cloud-open
+
+cloud-up:
+	@echo "$(YELLOW)> Provision Azure (Terraform) ...$(NC)"
+	@cd terraform && terraform init && terraform apply -auto-approve
+	@$(MAKE) cloud-open
+
+cloud-deploy:
+	@echo "$(YELLOW)> Déploiement Ansible sur la VM Azure...$(NC)"
+	@IP=$$(cd terraform && terraform output -raw public_ip); \
+	 echo "Cible: $$IP"; \
+	 cd ansible && ansible-galaxy collection install -r requirements.yml && \
+	 ansible-playbook -i "$$IP," -u azureuser site.yml -e acme_email=oscar.robert-besle@epitech.eu -e base_domain=$${IP//./-}.sslip.io
+	@$(MAKE) cloud-open
+
+cloud-open:
+	@IP=$$(cd terraform && terraform output -raw public_ip); \
+	 echo "$(GREEN)Accès:$(NC)"; \
+	 echo "  App:       https://app.$${IP//./-}.sslip.io"; \
+	 echo "  API:       https://api.$${IP//./-}.sslip.io"; \
+	 echo "  Grafana:   https://grafana.$${IP//./-}.sslip.io"; \
+	 echo "  Portainer: https://portainer.$${IP//./-}.sslip.io"; \
+	 echo "  Gitea:     https://gitea.$${IP//./-}.sslip.io"
+
+cloud-destroy:
+	@echo "$(YELLOW)> Destruction de l'infrastructure Azure...$(NC)"
+	@cd terraform && terraform destroy -auto-approve
+	@echo "$(GREEN)OK Infra Azure détruite$(NC)"
 
 # ====== Utilitaires ======
 shell-api:

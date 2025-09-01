@@ -1,0 +1,22 @@
+# Example configuration
+
+project             = ""
+environment         = ""
+location            = ""
+admin_username      = ""
+ssh_public_key_path = ""
+subscription_id     = ""
+
+# Restrict SSH to your IP(s)
+allowed_ssh_cidrs       = [""]
+gitea_ssh_port          = 2222
+allowed_gitea_ssh_cidrs = [""]
+
+tags = {
+  owner       = ""
+  environment = "prod"
+}
+
+# Auto run Ansible after Terraform
+auto_deploy_apps = true
+acme_email       = "oscar.robert-besle@epitech.eu"

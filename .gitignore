@@ -60,7 +60,16 @@ ops/loki/data/
 *.key
 *.crt
 *.csr
-!ops/traefik/certs/.gitkeep
+# Keep placeholder if present
+!ops/traefik/dynamic/certs/.gitkeep
+
+# Traefik auth file (if generated locally)
+ops/traefik/dynamic/.htpasswd
+
+# Frontend env files
+app/front_student/.env
+app/back_student/.env
+app/**/.env.local
 
 # Temporary files
 *.tmp
@@ -94,3 +103,19 @@ sessions/
 uploads/
 temp/
 tmp/
+
+# Terraform
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
+.terraform/
+*.tfplan
+.terraform.lock.hcl
+
+# Ansible
+ansible/*.retry
+ansible/inventory/hosts.ini
+
+# Let's Encrypt certificates
+ops/letsencrypt/
+acme.json

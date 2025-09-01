@@ -1,0 +1,10 @@
+---
+- name: Deploy CIA stack
+  hosts: all
+  become: true
+  vars:
+    project_root: /srv/cia
+  roles:
+    - role: common
+    - role: docker
+    - role: deploy

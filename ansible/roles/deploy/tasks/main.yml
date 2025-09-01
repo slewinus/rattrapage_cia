@@ -1,0 +1,184 @@
+---
+- name: Create project directory
+  ansible.builtin.file:
+    path: "{{ project_root }}"
+    state: directory
+    mode: '0755'
+
+- name: Resolve repository root (absolute path)
+  ansible.builtin.command: >-
+    python3 -c 'import os; print(os.path.realpath("{{ playbook_dir }}/.."))'
+  register: repo_root_cmd
+  changed_when: false
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Set repo_root fact
+  ansible.builtin.set_fact:
+    repo_root: "{{ repo_root_cmd.stdout }}"
+
+- name: Sync project to remote (excluding VCS and build caches)
+  ansible.posix.synchronize:
+    src: "{{ repo_root }}/"
+    dest: "{{ project_root }}"
+    delete: false
+    rsync_opts:
+      - "--exclude=.git"
+      - "--exclude=.env"
+      - "--exclude=node_modules"
+      - "--exclude=**/.DS_Store"
+    rsync_path: "sudo -u root rsync"
+  become: false
+
+- name: Render environment file from template
+  ansible.builtin.template:
+    src: env.remote.j2
+    dest: "{{ project_root }}/.env"
+    mode: '0644'
+
+- name: Copy env file to ops directory
+  ansible.builtin.copy:
+    src: "{{ project_root }}/.env"
+    dest: "{{ project_root }}/ops/.env"
+    remote_src: true
+    mode: '0644'
+
+- name: Copy env file to app directory
+  ansible.builtin.copy:
+    src: "{{ project_root }}/.env"
+    dest: "{{ project_root }}/app/.env"
+    remote_src: true
+    mode: '0644'
+
+- name: Fix COMPOSE_PROJECT_NAME for ops stack
+  ansible.builtin.lineinfile:
+    path: "{{ project_root }}/ops/.env"
+    regexp: '^COMPOSE_PROJECT_NAME='
+    line: 'COMPOSE_PROJECT_NAME=cia-ops'
+    state: present
+
+- name: Ensure traefik network exists
+  community.docker.docker_network:
+    name: traefik
+    state: present
+
+- name: Stop potential conflicting system services on 80/443 (nginx/apache)
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop:
+    - nginx
+    - apache2
+  failed_when: false
+  ignore_errors: true
+
+- name: Find containers using port 80
+  ansible.builtin.shell: |
+    docker ps -q --filter "publish=80" | xargs -r docker inspect --format='{{ "{{.Name}}" }}' | sed 's/^\\///' || true
+  register: containers_port_80
+  changed_when: false
+
+- name: Find containers using port 443
+  ansible.builtin.shell: |
+    docker ps -q --filter "publish=443" | xargs -r docker inspect --format='{{ "{{.Name}}" }}' | sed 's/^\\///' || true
+  register: containers_port_443
+  changed_when: false
+
+- name: Stop containers using port 80
+  ansible.builtin.shell: |
+    docker stop {{ item }} || true
+  loop: "{{ containers_port_80.stdout_lines }}"
+  when: containers_port_80.stdout_lines | length > 0
+  changed_when: false
+
+- name: Stop containers using port 443
+  ansible.builtin.shell: |
+    docker stop {{ item }} || true
+  loop: "{{ containers_port_443.stdout_lines }}"
+  when: containers_port_443.stdout_lines | length > 0
+  changed_when: false
+
+- name: Show processes listening on 80/443 (diagnostic)
+  ansible.builtin.shell: |
+    ss -ltnp '( sport = :80 or sport = :443 )' || true
+  register: ports_listen
+  changed_when: false
+
+- name: Try freeing ports 80/443 if still busy
+  ansible.builtin.shell: |
+    fuser -k 80/tcp || true
+    fuser -k 443/tcp || true
+  changed_when: false
+  failed_when: false
+
+- name: Wait for ports to be freed
+  ansible.builtin.wait_for:
+    port: "{{ item }}"
+    state: stopped
+    timeout: 10
+  loop:
+    - 80
+    - 443
+  ignore_errors: true
+
+- name: Bring down existing ops stack (if any)
+  community.docker.docker_compose_v2:
+    project_src: "{{ project_root }}/ops"
+    state: absent
+    remove_orphans: true
+  failed_when: false
+
+- name: Bring down existing app stack (if any)
+  community.docker.docker_compose_v2:
+    project_src: "{{ project_root }}/app"
+    state: absent
+    remove_orphans: true
+  failed_when: false
+
+- name: Remove any dangling traefik containers
+  ansible.builtin.shell: |
+    docker ps -aq --filter "name=traefik" | xargs -r docker rm -f || true
+  changed_when: false
+
+- name: Bring up ops stack (Traefik/Loki/Grafana/Portainer)
+  community.docker.docker_compose_v2:
+    project_src: "{{ project_root }}/ops"
+    state: present
+    remove_orphans: true
+    recreate: always
+
+- name: Bring up app stack (DB/API/Web)
+  community.docker.docker_compose_v2:
+    project_src: "{{ project_root }}/app"
+    state: present
+    remove_orphans: true
+    recreate: always
+    build: always
+
+- name: Wait for services to be ready
+  ansible.builtin.pause:
+    seconds: 30
+
+- name: Check docker containers status
+  ansible.builtin.shell: |
+    docker ps --format "table {{ '{{.Names}}\t{{.Status}}\t{{.Ports}}' }}"
+  register: container_status
+  changed_when: false
+
+- name: Display container status
+  ansible.builtin.debug:
+    var: container_status.stdout_lines
+
+- name: Check Traefik logs for errors
+  ansible.builtin.shell: |
+    docker logs cia-ops-traefik-1 2>&1 | tail -20 || echo "No Traefik container found"
+  register: traefik_logs
+  changed_when: false
+  ignore_errors: true
+
+- name: Display Traefik logs
+  ansible.builtin.debug:
+    var: traefik_logs.stdout_lines
+  when: traefik_logs.stdout_lines is defined

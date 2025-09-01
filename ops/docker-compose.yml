@@ -7,6 +7,10 @@ services:
     image: traefik:v3.0
     command:
       - --configFile=/etc/traefik/traefik.yml
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
     ports:
       - "${TRAEFIK_HTTP_PORT:-80}:80"
       - "${TRAEFIK_HTTPS_PORT:-443}:443"
@@ -15,7 +19,18 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - letsencrypt:/letsencrypt
     restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.traefik.rule=Host(`traefik.${BASE_DOMAIN}`)
+      - traefik.http.routers.traefik.entrypoints=websecure
+      - traefik.http.routers.traefik.tls=true
+      - traefik.http.routers.traefik.tls.certresolver=letsencrypt
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.routers.traefik.middlewares=traefik-auth
+      - traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH:-admin:$$2y$$10$$9XhfKmSJVZf5JvJlqMfyXuH8H6qJGzLGqY2ZWLV8q/wFVPghrVpGe}
     networks:
       - traefik
       - prometheus
@@ -46,9 +61,10 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik
-      - traefik.http.routers.grafana.rule=Host(`grafana.localhost`)
+      - traefik.http.routers.grafana.rule=Host(`grafana.${BASE_DOMAIN}`)
       - traefik.http.routers.grafana.entrypoints=websecure
       - traefik.http.routers.grafana.tls=true
+      - traefik.http.routers.grafana.tls.certresolver=letsencrypt
       - traefik.http.services.grafana.loadbalancer.server.port=3000
     networks:
       - traefik
@@ -65,9 +81,10 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik
-      - traefik.http.routers.portainer.rule=Host(`portainer.localhost`)
+      - traefik.http.routers.portainer.rule=Host(`portainer.${BASE_DOMAIN}`)
       - traefik.http.routers.portainer.entrypoints=websecure
       - traefik.http.routers.portainer.tls=true
+      - traefik.http.routers.portainer.tls.certresolver=letsencrypt
       - traefik.http.services.portainer.loadbalancer.server.port=9000
     networks:
       - traefik
@@ -82,9 +99,9 @@ services:
       - GITEA__database__NAME=${GITEA_DB_NAME:-gitea}
       - GITEA__database__USER=${GITEA_DB_USER:-gitea}
       - GITEA__database__PASSWD=${GITEA_DB_PASSWORD:-GiteaPassword123!}
-      - GITEA__server__DOMAIN=gitea.localhost
-      - GITEA__server__SSH_DOMAIN=gitea.localhost
-      - GITEA__server__ROOT_URL=https://gitea.localhost:${TRAEFIK_HTTPS_PORT:-443}/
+      - GITEA__server__DOMAIN=gitea.${BASE_DOMAIN}
+      - GITEA__server__SSH_DOMAIN=gitea.${BASE_DOMAIN}
+      - GITEA__server__ROOT_URL=https://gitea.${BASE_DOMAIN}/
       - GITEA__server__HTTP_PORT=${GITEA_HTTP_PORT:-3000}
       - GITEA__server__SSH_PORT=${GITEA_SSH_PORT:-2222}
       - GITEA__security__SECRET_KEY=${GITEA_SECRET_KEY:-changeme-secret-key-minimum-64-chars-aaaaaaaaaaaaaaaaaaaaaaaaaaaa}
@@ -105,13 +122,14 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik
-      - traefik.http.routers.gitea.rule=Host(`gitea.localhost`)
+      - traefik.http.routers.gitea.rule=Host(`gitea.${BASE_DOMAIN}`)
       - traefik.http.routers.gitea.entrypoints=websecure
       - traefik.http.routers.gitea.tls=true
+      - traefik.http.routers.gitea.tls.certresolver=letsencrypt
       - traefik.http.services.gitea.loadbalancer.server.port=3000
       - traefik.http.routers.gitea.middlewares=gitea-headers
       - traefik.http.middlewares.gitea-headers.headers.customrequestheaders.X-Forwarded-Proto=https
-      - traefik.http.middlewares.gitea-headers.headers.customrequestheaders.X-Forwarded-Host=gitea.localhost
+      - traefik.http.middlewares.gitea-headers.headers.customrequestheaders.X-Forwarded-Host=gitea.${BASE_DOMAIN}
     networks:
       - traefik
 
@@ -150,6 +168,7 @@ volumes:
   portainer-data:
   gitea-data:
   gitea-db-data:
+  letsencrypt:
 
 networks:
   traefik:

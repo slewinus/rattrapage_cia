@@ -45,9 +45,10 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik
-      - traefik.http.routers.api.rule=Host(`api.localhost`)
+      - traefik.http.routers.api.rule=Host(`api.${BASE_DOMAIN}`)
       - traefik.http.routers.api.entrypoints=websecure
       - traefik.http.routers.api.tls=true
+      - traefik.http.routers.api.tls.certresolver=letsencrypt
       - traefik.http.services.api.loadbalancer.server.port=${API_PORT:-3000}
       - logging=promtail
     restart: unless-stopped
@@ -71,14 +72,16 @@ services:
       - logging=promtail
       - traefik.docker.network=traefik
       - traefik.enable=true
-      - traefik.http.routers.app.rule=Host(`app.localhost`)
+      - traefik.http.routers.app.rule=Host(`app.${BASE_DOMAIN}`)
       - traefik.http.routers.app.entrypoints=websecure
       - traefik.http.routers.app.tls=true
+      - traefik.http.routers.app.tls.certresolver=letsencrypt
       - traefik.http.services.app.loadbalancer.server.port=80
       # Route /api to the API service
-      - traefik.http.routers.app-api.rule=Host(`app.localhost`) && PathPrefix(`/api`)
+      - traefik.http.routers.app-api.rule=Host(`app.${BASE_DOMAIN}`) && PathPrefix(`/api`)
       - traefik.http.routers.app-api.entrypoints=websecure
       - traefik.http.routers.app-api.tls=true
+      - traefik.http.routers.app-api.tls.certresolver=letsencrypt
       - traefik.http.routers.app-api.service=api
       - traefik.http.middlewares.api-stripprefix.stripprefix.prefixes=/api
       - traefik.http.routers.app-api.middlewares=api-stripprefix
