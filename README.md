@@ -34,6 +34,20 @@ cia-app/
 └── Makefile              # Commandes simplifiées
 ```
 
+## 🔒 Reverse Proxy (HTTPS via Traefik)
+
+Traefik termine le TLS et route vers les services cibles. Des hôtes locaux sont exposés en HTTPS (certificat auto-signé par défaut) :
+
+- Frontend: https://app.localhost
+- API: https://api.localhost
+- Grafana: https://grafana.localhost
+- Portainer: https://portainer.localhost
+- Gitea: https://gitea.localhost (SSH: `ssh://git@localhost:2222`)
+
+Notes:
+- Redirection HTTP→HTTPS automatique.
+- Pour un certificat de confiance, fournissez vos propres certs via `ops/traefik/dynamic` ou utilisez `mkcert`.
+
 ## ⚡ Installation rapide
 
 ### 1. Cloner le projet
@@ -65,19 +79,19 @@ make start   # Lancement des services
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| **Frontend React** | http://localhost:8080 | Email: `admin`<br>Pass: `admin`<br>*(entrez "admin" dans le champ email)* |
-| **API Backend** | http://localhost:8080/api | Via token JWT après login |
+| **Frontend React** | https://app.localhost | Email: `admin`<br>Pass: `admin` |
+| **API Backend** | https://api.localhost | Via token JWT après login |
 | **Base de données** | `localhost:3306` | User: `root`<br>Pass: `SecurePassword123!`<br>DB: `cia_database` |
 
 ### 📊 Monitoring & Administration
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| **Grafana** | http://localhost:3000 | User: `admin`<br>Pass: `GrafanaAdmin2025!` |
-| **Loki (Logs)** | http://localhost:3100 | Accessible via Grafana |
-| **Portainer** | http://localhost:9000 | Pass: `PortainerAdmin2025!` |
-| **Gitea** | http://localhost:3001 | User: `gitea_admin`<br>Pass: `GiteaAdmin2025!` |
-| **Gitea SSH** | `ssh://git@localhost:2222` | Configure SSH keys in Gitea |
+| **Grafana** | https://grafana.localhost | User: `admin`<br>Pass: `GrafanaAdmin2025!` |
+| **Loki (Logs)** | Interne (via Grafana) | — |
+| **Portainer** | https://portainer.localhost | Pass: `PortainerAdmin2025!` |
+| **Gitea** | https://gitea.localhost | User: `gitea_admin`<br>Pass: `GiteaAdmin2025!` |
+| **Gitea SSH** | `ssh://git@localhost:2223` | Configure SSH keys in Gitea |
 
 ## ⚙️ Configuration
 
@@ -113,7 +127,7 @@ PORTAINER_ADMIN_PASSWORD=PortainerAdmin2025!
 #### 🔧 Gitea (Git Server)
 ```env
 GITEA_WEB_PORT=3001
-GITEA_SSH_PORT=2222
+GITEA_SSH_PORT=2223
 GITEA_ADMIN_USER=gitea_admin
 GITEA_ADMIN_PASSWORD=GiteaAdmin2025!
 GITEA_ADMIN_EMAIL=admin@gitea.local
@@ -161,7 +175,7 @@ make gitea-admin # Créer le compte admin Gitea (après le premier démarrage)
 ## 📈 Monitoring avec Grafana
 
 ### Configuration initiale
-1. Accédez à http://localhost:3000
+1. Accédez à https://grafana.localhost (acceptez l’avertissement de certificat si nécessaire)
 2. Connectez-vous avec `admin` / `GrafanaAdmin2025!`
 3. Loki est déjà configuré comme source de données
 
@@ -175,7 +189,7 @@ make gitea-admin # Créer le compte admin Gitea (après le premier démarrage)
 
 ## 🐳 Gestion avec Portainer
 
-1. Accédez à http://localhost:9000
+1. Accédez à https://portainer.localhost (acceptez l’avertissement de certificat si nécessaire)
 2. Première connexion : définissez un nom d'utilisateur admin
 3. Mot de passe : `PortainerAdmin2025!`
 4. Sélectionnez **Local** pour gérer Docker local
@@ -211,11 +225,7 @@ make shell-db
 ```
 
 ### Ports déjà utilisés
-Si les ports sont occupés, modifiez dans `.env` :
-```env
-WEB_PORT=8081        # Au lieu de 8080
-GRAFANA_PORT=3001    # Au lieu de 3000
-```
+Les services ne publient plus de ports HTTP individuels (tout passe via Traefik en 80/443). Si des ports 80/443 sont pris, arrêtez les services en conflit ou ajustez la config Traefik.
 
 ### Nettoyer complètement
 ```bash

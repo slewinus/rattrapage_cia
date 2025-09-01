@@ -4,16 +4,34 @@ name: cia-ops
 x-user: &user "1001:1001"
 
 services:
+  traefik:
+    image: traefik:v3.0
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+    ports:
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "${TRAEFIK_HTTPS_PORT:-443}:443"
+      - "9100:9100"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+    restart: unless-stopped
+    networks:
+      - traefik
+      - prometheus
   loki:
     image: grafana/loki:2.9.0
     command: -config.file=/etc/loki/local-config.yml
     volumes:
       - ./loki-config.yml:/etc/loki/local-config.yml:ro
       - loki-data:/loki
-    ports: ["${LOKI_PORT:-3100}:3100"]
+    # No direct port mapping; reachable via internal networks
     environment:
       LOKI_RETENTION_PERIOD: ${LOKI_RETENTION_PERIOD:-168h}
     restart: unless-stopped
+    networks:
+      - traefik
 
   grafana:
     image: grafana/grafana:10.2.3
@@ -24,9 +42,18 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
-    ports: ["${GRAFANA_PORT:-3000}:3000"]
     depends_on: [loki]
     restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.grafana.rule=Host(`grafana.localhost`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.grafana.tls=true
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+    networks:
+      - traefik
+      - prometheus
 
   portainer:
     image: portainer/portainer-ce:2.20.3
@@ -35,8 +62,16 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer-data:/data
-    ports: ["${PORTAINER_PORT:-9000}:9000"]
     restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.portainer.rule=Host(`portainer.localhost`)
+      - traefik.http.routers.portainer.entrypoints=websecure
+      - traefik.http.routers.portainer.tls=true
+      - traefik.http.services.portainer.loadbalancer.server.port=9000
+    networks:
+      - traefik
 
   gitea:
     image: gitea/gitea:1.22-rootless
@@ -48,9 +83,9 @@ services:
       - GITEA__database__NAME=${GITEA_DB_NAME:-gitea}
       - GITEA__database__USER=${GITEA_DB_USER:-gitea}
       - GITEA__database__PASSWD=${GITEA_DB_PASSWORD:-GiteaPassword123!}
-      - GITEA__server__DOMAIN=${GITEA_DOMAIN:-localhost}
-      - GITEA__server__SSH_DOMAIN=${GITEA_DOMAIN:-localhost}
-      - GITEA__server__ROOT_URL=${GITEA_ROOT_URL:-http://localhost:3001}
+      - GITEA__server__DOMAIN=gitea.localhost
+      - GITEA__server__SSH_DOMAIN=gitea.localhost
+      - GITEA__server__ROOT_URL=https://gitea.localhost:${TRAEFIK_HTTPS_PORT:-443}/
       - GITEA__server__HTTP_PORT=${GITEA_HTTP_PORT:-3000}
       - GITEA__server__SSH_PORT=${GITEA_SSH_PORT:-2222}
       - GITEA__security__SECRET_KEY=${GITEA_SECRET_KEY:-changeme-secret-key-minimum-64-chars-aaaaaaaaaaaaaaaaaaaaaaaaaaaa}
@@ -63,12 +98,23 @@ services:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     ports:
-      - "${GITEA_WEB_PORT:-3001}:3000"
-      - "${GITEA_SSH_PORT:-2222}:22"
+      - "${GITEA_SSH_PORT:-2222}:22" # Keep SSH exposed
     depends_on:
       gitea-db:
         condition: service_healthy
     restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.gitea.rule=Host(`gitea.localhost`)
+      - traefik.http.routers.gitea.entrypoints=websecure
+      - traefik.http.routers.gitea.tls=true
+      - traefik.http.services.gitea.loadbalancer.server.port=3000
+      - traefik.http.routers.gitea.middlewares=gitea-headers
+      - traefik.http.middlewares.gitea-headers.headers.customrequestheaders.X-Forwarded-Proto=https
+      - traefik.http.middlewares.gitea-headers.headers.customrequestheaders.X-Forwarded-Host=gitea.localhost
+    networks:
+      - traefik
 
   gitea-db:
     image: mariadb:10.6
@@ -86,6 +132,18 @@ services:
       retries: 30
       start_period: 30s
     restart: unless-stopped
+    networks:
+      - traefik
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+    networks:
+      - prometheus
 
 volumes:
   loki-data:
@@ -93,3 +151,9 @@ volumes:
   portainer-data:
   gitea-data:
   gitea-db-data:
+
+networks:
+  traefik:
+    external: true
+  prometheus:
+    driver: bridge

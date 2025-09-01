@@ -39,10 +39,10 @@ help:
 	@echo "  $(GREEN)make quick-start$(NC) -> Build et lance tout en une commande"
 	@echo ""
 	@echo "$(YELLOW)📍 URLs d'accès:$(NC)"
-	@echo "  Frontend:  $(GREEN)http://localhost:8080$(NC)"
-	@echo "  Grafana:   $(GREEN)http://localhost:3000$(NC) (admin/GrafanaAdmin2025!)"
-	@echo "  Gitea:     $(GREEN)http://localhost:3001$(NC)"
-	@echo "  Portainer: $(GREEN)http://localhost:9000$(NC)"
+	@echo "  Frontend:  $(GREEN)https://app.localhost$(NC)"
+	@echo "  Grafana:   $(GREEN)https://grafana.localhost$(NC) (admin/GrafanaAdmin2025!)"
+	@echo "  Gitea:     $(GREEN)https://gitea.localhost$(NC)"
+	@echo "  Portainer: $(GREEN)https://portainer.localhost$(NC)"
 	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
 
 # ====== Commandes principales ======
@@ -51,10 +51,10 @@ start: ops-up app-up
 	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
 	@echo "$(GREEN)✅ Application démarrée avec succès!$(NC)"
 	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
-	@echo "  Frontend:  $(GREEN)http://localhost:8080$(NC)"
-	@echo "  Grafana:   $(GREEN)http://localhost:3000$(NC)"
-	@echo "  Gitea:     $(GREEN)http://localhost:3001$(NC)"
-	@echo "  Portainer: $(GREEN)http://localhost:9000$(NC)"
+	@echo "  Frontend:  $(GREEN)https://app.localhost$(NC)"
+	@echo "  Grafana:   $(GREEN)https://grafana.localhost$(NC)"
+	@echo "  Gitea:     $(GREEN)https://gitea.localhost$(NC)"
+	@echo "  Portainer: $(GREEN)https://portainer.localhost$(NC)"
 	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
 
 stop: app-down ops-down
@@ -81,8 +81,9 @@ build:
 
 # ====== OPS (Monitoring) ======
 ops-up:
-	@echo "$(YELLOW)🚀 Démarrage du monitoring (Loki/Grafana/Portainer)...$(NC)"
-	@docker compose -f $(OPS_COMPOSE) up -d
+	@echo "$(YELLOW)🚀 Démarrage du monitoring (Traefik/Loki/Grafana/Portainer)...$(NC)"
+	@docker network inspect traefik >/dev/null 2>&1 || docker network create traefik
+	@docker compose -p cia-ops -f $(OPS_COMPOSE) --env-file $(ENV_FILE) up -d
 	@echo "$(YELLOW)⏳ Attente que Loki soit prêt...$(NC)"
 	@i=0; until [ $$i -ge 30 ] || docker compose -f $(OPS_COMPOSE) exec -T loki wget -q --spider http://localhost:3100/ready 2>/dev/null; do \
 		i=$$((i+1)); \
@@ -93,7 +94,7 @@ ops-up:
 
 ops-down:
 	@echo "$(YELLOW)⏹  Arrêt du monitoring...$(NC)"
-	@docker compose -f $(OPS_COMPOSE) down
+	@docker compose -p cia-ops -f $(OPS_COMPOSE) down
 
 ops-logs:
 	docker compose -f $(OPS_COMPOSE) logs -f
@@ -101,6 +102,7 @@ ops-logs:
 # ====== APP ======
 app-up:
 	@echo "$(YELLOW)🚀 Démarrage de l'application...$(NC)"
+	@docker network inspect traefik >/dev/null 2>&1 || docker network create traefik
 	@docker compose -f $(APP_COMPOSE) --env-file $(ENV_FILE) up -d
 	@echo "$(GREEN)✅ Application démarrée$(NC)"
 
@@ -162,3 +164,15 @@ db-reset:
 dev-up: start
 dev-down: stop
 ps: status
+tls-mkcert:
+	@echo "$(YELLOW)🔐 Generating local TLS certs with mkcert...$(NC)"
+	@mkdir -p ops/traefik/dynamic/certs
+	@if command -v mkcert >/dev/null 2>&1; then \
+		mkcert -install >/dev/null 2>&1 || true; \
+		mkcert -cert-file ops/traefik/dynamic/certs/local-cert.pem -key-file ops/traefik/dynamic/certs/local-key.pem app.localhost api.localhost grafana.localhost portainer.localhost gitea.localhost traefik.localhost localhost 127.0.0.1 ::1; \
+		printf '%s\n' "tls:" "  certificates:" "    - certFile: /etc/traefik/dynamic/certs/local-cert.pem" "      keyFile: /etc/traefik/dynamic/certs/local-key.pem" > ops/traefik/dynamic/tls.yml; \
+		echo "$(GREEN)✅ Certs generated. Restarting Traefik...$(NC)"; \
+		docker compose -p cia-ops -f $(OPS_COMPOSE) up -d traefik; \
+	else \
+		echo "$(RED)mkcert not found. Install: https://github.com/FiloSottile/mkcert$(NC)"; \
+	fi

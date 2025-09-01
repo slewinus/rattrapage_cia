@@ -1,0 +1,15 @@
+http:
+  routers:
+    traefik:
+      rule: Host(`traefik.localhost`)
+      entryPoints:
+        - websecure
+      service: api@internal
+      tls: {}
+      middlewares:
+        - traefik-auth
+
+  middlewares:
+    traefik-auth:
+      basicAuth:
+        usersFile: /etc/traefik/dynamic/.htpasswd

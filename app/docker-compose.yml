@@ -43,10 +43,17 @@ services:
     expose:
       - "${API_PORT:-3000}"
     labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.api.rule=Host(`api.localhost`)
+      - traefik.http.routers.api.entrypoints=websecure
+      - traefik.http.routers.api.tls=true
+      - traefik.http.services.api.loadbalancer.server.port=${API_PORT:-3000}
       - logging=promtail
     restart: unless-stopped
     networks:
       - app-network
+      - traefik
 
   web:
     build:
@@ -59,13 +66,19 @@ services:
         REACT_APP_API_URL: ${REACT_APP_API_URL:-/api}
     depends_on:
       - api
-    ports:
-      - "${WEB_PORT:-8080}:80"
+    # No direct port mapping; exposed via Traefik
     labels:
       - logging=promtail
+      - traefik.docker.network=traefik
+      - traefik.enable=true
+      - traefik.http.routers.app.rule=Host(`app.localhost`)
+      - traefik.http.routers.app.entrypoints=websecure
+      - traefik.http.routers.app.tls=true
+      - traefik.http.services.app.loadbalancer.server.port=80
     restart: unless-stopped
     networks:
       - app-network
+      - traefik
 
   promtail:
     image: grafana/promtail:2.9.0
@@ -76,12 +89,13 @@ services:
     restart: unless-stopped
     networks:
       - app-network
-    external_links:
-      - cia-ops-loki-1:loki
+      - traefik
 
 networks:
   app-network:
     driver: bridge
+  traefik:
+    external: true
 
 volumes:
   db-data:
