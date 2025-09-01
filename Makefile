@@ -218,29 +218,6 @@ vault-ui:
 	@echo "$(GREEN)> Ouverture de Vault UI...$(NC)"
 	@open https://vault-ui.localhost:8443 2>/dev/null || xdg-open https://vault-ui.localhost:8443 2>/dev/null || echo "Ouvrez https://vault-ui.localhost:8443 dans votre navigateur"
 
-# ====== Services WOW (Monitoring avancé) ======
-.PHONY: wow-up wow-down wow-status
-
-wow-up:
-	@echo "$(YELLOW)> Démarrage des services WOW...$(NC)"
-	@docker compose -f ops/wow-services.yml up -d
-	@echo "$(GREEN)OK Services WOW démarrés !$(NC)"
-	@echo ""
-	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
-	@echo "$(GREEN)> Services de monitoring avancés disponibles :$(NC)"
-	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
-	@echo "  > Dozzle:       $(GREEN)https://logs.localhost:8443$(NC) - Logs en temps réel"
-	@echo "  > Jaeger:       $(GREEN)https://jaeger.localhost:8443$(NC) - Distributed tracing"
-	@echo "  > AlertManager: $(GREEN)https://alerts.localhost:8443$(NC) - Gestion des alertes"
-	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
-
-wow-down:
-	@echo "$(YELLOW)STOP  Arrêt des services WOW...$(NC)"
-	@docker compose -f ops/wow-services.yml down
-
-wow-status:
-	@echo "$(GREEN)> État des services WOW$(NC)"
-	@docker compose -f ops/wow-services.yml ps
 
 # ====== Alias pour compatibilité ======
 .PHONY: dev-up dev-down ps

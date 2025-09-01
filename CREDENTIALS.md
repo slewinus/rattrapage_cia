@@ -105,3 +105,11 @@ curl -X POST http://localhost:8080/api/auth/login \
 5. Limitez l'accès aux ports en production (utilisez un reverse proxy)
 
 - Identifiants par défaut: admin / TraefikAdmin2025!.
+
+ - ✅ Créé une migration TypeORM avec 5 utilisateurs :
+    - admin / admin (ADMIN)
+    - manager / manager123 (USER)
+    - developer / dev123 (USER)
+    - test / test123 (USER)
+    - guest / guest123 (USER)
+    
