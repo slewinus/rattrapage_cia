@@ -1,19 +1,19 @@
-# 🔐 Credentials - CIA Application
+#  Credentials - CIA Application
 
-## 📱 Application Frontend (http://localhost:8080)
+##  Application Frontend (http://localhost:8080)
 
 ### Utilisateur par défaut
 - **Email (username):** `admin` *(entrez "admin" dans le champ email)*
 - **Password:** `admin`
 - **Role:** ADMIN
 
-> 📝 **Note:** Le frontend affiche "Email" mais attend en réalité le username. Entrez simplement `admin` dans le champ email.
+>  **Note:** Le frontend affiche "Email" mais attend en réalité le username. Entrez simplement `admin` dans le champ email.
 
-> ⚠️ **Important:** Changez ce mot de passe en production !
+>  **Important:** Changez ce mot de passe en production !
 
 ---
 
-## 🗄️ Base de données MariaDB
+##  Base de données MariaDB
 
 - **Host:** localhost:3306
 - **Database:** `cia_database`
@@ -31,7 +31,7 @@ docker exec -it cia-app-db-1 mariadb -uroot -pSecurePassword123! cia_database
 
 ---
 
-## 📊 Grafana (http://localhost:3000)
+##  Grafana (http://localhost:3000)
 
 - **Username:** `admin`
 - **Password:** `GrafanaAdmin2025!`
@@ -42,14 +42,14 @@ docker exec -it cia-app-db-1 mariadb -uroot -pSecurePassword123! cia_database
 
 ---
 
-## 🐳 Portainer (http://localhost:9000)
+## Portainer (http://localhost:9000)
 
 - **Username:** À définir lors de la première connexion
 - **Password:** `PortainerAdmin2025!`
 
 ---
 
-## 🔧 Comment changer les mots de passe
+##  Comment changer les mots de passe
 
 ### 1. Frontend Admin
 Pour changer le mot de passe admin du frontend, connectez-vous puis allez dans les paramètres utilisateur.
@@ -77,7 +77,7 @@ docker compose -f ops/docker-compose.yml restart grafana
 
 ---
 
-## 🚀 Commandes utiles
+##  Commandes utiles
 
 ```bash
 # Voir tous les utilisateurs de l'application
@@ -96,7 +96,7 @@ curl -X POST http://localhost:8080/api/auth/login \
 
 ---
 
-## 📝 Notes de sécurité
+##  Notes de sécurité
 
 1. **Tous ces mots de passe doivent être changés en production**
 2. Utilisez des mots de passe forts et uniques

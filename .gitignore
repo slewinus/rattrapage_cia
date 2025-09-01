@@ -41,3 +41,56 @@ logs/
 dist/
 build/
 out/
+
+# Vault secrets and tokens
+vault-tokens.env
+vault-keys.json
+/tmp/vault-keys/
+ops/vault/data/
+ops/vault/logs/
+*.hcl.backup
+
+# Monitoring data
+ops/grafana/data/
+ops/prometheus/data/
+ops/loki/data/
+
+# Certificates
+*.pem
+*.key
+*.crt
+*.csr
+!ops/traefik/certs/.gitkeep
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+*.old
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# Coverage reports
+coverage/
+*.lcov
+.nyc_output/
+
+# Test results
+test-results/
+*.test.js
+
+# Session data
+sessions/
+*.session
+
+# Upload directories
+uploads/
+temp/
+tmp/

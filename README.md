@@ -1,6 +1,6 @@
-# 🚀 CIA Application - Guide Complet
+#  CIA Application - Guide Complet
 
-## 📋 Table des matières
+## Table des matières
 - [Vue d'ensemble](#vue-densemble)
 - [Architecture](#architecture)
 - [Installation rapide](#installation-rapide)
@@ -9,7 +9,7 @@
 - [Commandes utiles](#commandes-utiles)
 - [Dépannage](#dépannage)
 
-## 🎯 Vue d'ensemble
+##  Vue d'ensemble
 
 Application complète avec stack moderne incluant :
 - **Frontend** : React avec TypeScript
@@ -18,7 +18,7 @@ Application complète avec stack moderne incluant :
 - **Monitoring** : Grafana + Loki + Promtail
 - **Gestion Docker** : Portainer
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 cia-app/
@@ -34,7 +34,7 @@ cia-app/
 └── Makefile              # Commandes simplifiées
 ```
 
-## 🔒 Reverse Proxy (HTTPS via Traefik)
+##  Reverse Proxy (HTTPS via Traefik)
 
 Traefik termine le TLS et route vers les services cibles. Des hôtes locaux sont exposés en HTTPS (certificat auto-signé par défaut) :
 
@@ -48,7 +48,7 @@ Notes:
 - Redirection HTTP→HTTPS automatique.
 - Pour un certificat de confiance, fournissez vos propres certs via `ops/traefik/dynamic` ou utilisez `mkcert`.
 
-## ⚡ Installation rapide
+##  Installation rapide
 
 ### 1. Cloner le projet
 ```bash
@@ -73,9 +73,9 @@ make build   # Build des images
 make start   # Lancement des services
 ```
 
-## 🔐 Accès aux services
+##  Accès aux services
 
-### 📱 Application principale
+### Application principale
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
@@ -83,7 +83,7 @@ make start   # Lancement des services
 | **API Backend** | https://api.localhost | Via token JWT après login |
 | **Base de données** | `localhost:3306` | User: `root`<br>Pass: `SecurePassword123!`<br>DB: `cia_database` |
 
-### 📊 Monitoring & Administration
+###  Monitoring & Administration
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
@@ -93,38 +93,38 @@ make start   # Lancement des services
 | **Gitea** | https://gitea.localhost | User: `gitea_admin`<br>Pass: `GiteaAdmin2025!` |
 | **Gitea SSH** | `ssh://git@localhost:2223` | Configure SSH keys in Gitea |
 
-## ⚙️ Configuration
+##  Configuration
 
 ### Variables d'environnement principales
 
-#### 🗄️ Base de données
+####  Base de données
 ```env
 DB_USER=root
 DB_PASSWORD=SecurePassword123!
 DB_NAME=cia_database
 ```
 
-#### 🔌 API Backend
+#### API Backend
 ```env
 NODE_ENV=production
 API_PORT=3000
 JWT_SECRET=your-super-secret-jwt-key-change-me-in-production
 ```
 
-#### 🎨 Frontend
+####  Frontend
 ```env
 REACT_APP_API_URL=/api
 REACT_APP_ENVIRONMENT=production
 ```
 
-#### 📊 Monitoring
+####  Monitoring
 ```env
 GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=GrafanaAdmin2025!
 PORTAINER_ADMIN_PASSWORD=PortainerAdmin2025!
 ```
 
-#### 🔧 Gitea (Git Server)
+####  Gitea (Git Server)
 ```env
 GITEA_WEB_PORT=3001
 GITEA_SSH_PORT=2223
@@ -141,7 +141,7 @@ GITEA_ADMIN_EMAIL=admin@gitea.local
 make restart
 ```
 
-## 🛠️ Commandes utiles
+##  Commandes utiles
 
 ### Commandes principales
 ```bash
@@ -172,7 +172,7 @@ make shell-gitea # Shell dans le container Gitea
 make gitea-admin # Créer le compte admin Gitea (après le premier démarrage)
 ```
 
-## 📈 Monitoring avec Grafana
+##  Monitoring avec Grafana
 
 ### Configuration initiale
 1. Accédez à https://grafana.localhost (acceptez l’avertissement de certificat si nécessaire)
@@ -201,7 +201,7 @@ make gitea-admin # Créer le compte admin Gitea (après le premier démarrage)
 - Inspection des volumes
 - Monitoring des ressources
 
-## 🔧 Dépannage
+##  Dépannage
 
 ### L'application ne démarre pas
 ```bash
@@ -236,14 +236,14 @@ make clean
 docker volume prune -f
 ```
 
-## 📝 Notes importantes
+##  Notes importantes
 
 1. **Sécurité** : Changez tous les mots de passe en production
 2. **Performances** : Les images utilisent Alpine Linux pour réduire la taille
 3. **Cache** : Docker BuildKit est activé pour des builds plus rapides
 4. **Logs** : Tous les logs sont centralisés dans Loki via Promtail
 
-## 🤝 Support
+## Support
 
 Pour toute question ou problème :
 1. Vérifiez les logs : `make logs`

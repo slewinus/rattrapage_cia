@@ -1,0 +1,78 @@
+name: cia-security
+
+services:
+  vault:
+    image: hashicorp/vault:1.15
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: myroot
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://0.0.0.0:8200
+      VAULT_API_ADDR: http://0.0.0.0:8200
+      VAULT_LOG_LEVEL: info
+    volumes:
+      - ./vault/policies:/vault/policies:ro
+      - ./vault/scripts:/vault/scripts:ro
+      - vault-data:/vault/file
+      - vault-logs:/vault/logs
+    ports:
+      - "8201:8200"
+    healthcheck:
+      test: ["CMD", "vault", "status", "-tls-skip-verify"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.vault.rule=Host(`vault.localhost`)
+      - traefik.http.routers.vault.entrypoints=websecure
+      - traefik.http.routers.vault.tls=true
+      - traefik.http.services.vault.loadbalancer.server.port=8200
+      - traefik.http.routers.vault.middlewares=vault-headers
+      - traefik.http.middlewares.vault-headers.headers.customrequestheaders.X-Vault-Request=true
+    networks:
+      - traefik
+      - security
+
+
+  # Vault UI helper service for easy access
+  vault-ui:
+    image: djenriquez/vault-ui:latest
+    environment:
+      VAULT_URL_DEFAULT: http://vault:8200
+      VAULT_AUTH_DEFAULT: TOKEN
+      NODE_TLS_REJECT_UNAUTHORIZED: 0
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.vault-ui.rule=Host(`vault-ui.localhost`)
+      - traefik.http.routers.vault-ui.entrypoints=websecure
+      - traefik.http.routers.vault-ui.tls=true
+      - traefik.http.services.vault-ui.loadbalancer.server.port=8000
+    networks:
+      - traefik
+      - security
+    depends_on:
+      - vault
+    restart: unless-stopped
+
+volumes:
+  vault-data:
+    driver: local
+  vault-logs:
+    driver: local
+  fail2ban-data:
+    driver: local
+  traefik-logs:
+    driver: local
+  app-logs:
+    driver: local
+
+networks:
+  traefik:
+    external: true
+  security:
+    driver: bridge
