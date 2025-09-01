@@ -77,6 +77,7 @@ services:
     environment:
       - USER_UID=${GITEA_USER_UID:-1000}
       - USER_GID=${GITEA_USER_GID:-1000}
+      - GITEA__actions__ENABLED=true
       - GITEA__database__DB_TYPE=mysql
       - GITEA__database__HOST=gitea-db:3306
       - GITEA__database__NAME=${GITEA_DB_NAME:-gitea}
@@ -115,6 +116,35 @@ services:
     networks:
       - traefik
 
+  gitea-runner:
+    image: gitea/act_runner:latest
+    depends_on:
+      - gitea
+    environment:
+      - GITEA_INSTANCE_URL=http://gitea:3000
+      - GITEA_RUNNER_REGISTRATION_TOKEN=${GITEA_RUNNER_REGISTRATION_TOKEN}
+      - GITEA_RUNNER_NAME=${GITEA_RUNNER_NAME:-docker-runner}
+      - GITEA_RUNNER_LABELS=${GITEA_RUNNER_LABELS:-docker}
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - gitea-runner-data:/data
+    entrypoint: ["/bin/sh","-c"]
+    command:
+      - |
+        if [ ! -f /data/.configured ]; then \
+          act_runner register --no-interactive \
+            --instance $$GITEA_INSTANCE_URL \
+            --token $$GITEA_RUNNER_REGISTRATION_TOKEN \
+            --name $$GITEA_RUNNER_NAME \
+            --labels "$$GITEA_RUNNER_LABELS" && \
+          touch /data/.configured; \
+        fi; \
+        exec act_runner daemon --config /data/.runner
+    restart: unless-stopped
+    networks:
+      - traefik
+
   gitea-db:
     image: mariadb:10.6
     environment:
@@ -150,6 +180,7 @@ volumes:
   portainer-data:
   gitea-data:
   gitea-db-data:
+  gitea-runner-data:
 
 networks:
   traefik:

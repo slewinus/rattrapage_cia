@@ -1,0 +1,50 @@
+#cloud-config
+package_update: true
+package_upgrade: false
+packages:
+  - ca-certificates
+  - curl
+  - git
+  - make
+
+write_files:
+  - path: /etc/docker/daemon.json
+    permissions: '0644'
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "10m", "max-file": "3" }
+      }
+
+runcmd:
+  # Install Docker Engine + Compose plugin (official repo)
+  - bash -lc 'install -m 0755 -d /etc/apt/keyrings'
+  - bash -lc 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg'
+  - bash -lc 'chmod a+r /etc/apt/keyrings/docker.gpg'
+  - bash -lc 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" > /etc/apt/sources.list.d/docker.list'
+  - bash -lc 'apt-get update -y && apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin'
+  - bash -lc 'usermod -aG docker ${admin_username}'
+
+  # Prepare workspace
+  - bash -lc 'mkdir -p /opt && chown ${admin_username}:${admin_username} /opt'
+  - bash -lc '[ -n "${git_repo_url}" ] && [ "${git_repo_url}" != "" ] && (
+      cd /opt && git clone --depth 1 -b ${git_repo_branch} ${git_repo_url} cia || true
+    ) || true'
+
+  # Pre-create traefik network (external in your compose files)
+  - bash -lc 'docker network create traefik || true'
+
+  # Helpful login message
+  - bash -lc 'cat >/etc/motd <<EOF
+Welcome to the CIA Azure VM.
+Docker and Compose are installed.
+Repo (if cloned): /opt/cia
+
+Next steps:
+  cd /opt/cia
+  # Fill .env with Azure hostnames (see .env.azure.example)
+  docker compose -f ops/docker-compose.yml -f ops/docker-compose.azure.yml up -d
+  docker compose -f app/docker-compose.yml -f app/docker-compose.azure.yml build
+  docker compose -f app/docker-compose.yml -f app/docker-compose.azure.yml up -d
+EOF'
+

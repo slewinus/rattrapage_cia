@@ -37,6 +37,7 @@ help:
 	@echo ""
 	@echo "$(YELLOW)> Démarrage ultra-rapide:$(NC)"
 	@echo "  $(GREEN)make quick-start$(NC) -> Build et lance tout en une commande"
+	@echo "  $(GREEN)make ci$(NC)          -> Pipeline local (build/start/test/stop)"
 	@echo ""
 	@echo "$(YELLOW)> URLs d'accès:$(NC)"
 	@echo "  Frontend:  $(GREEN)https://app.localhost$(NC)"
@@ -72,6 +73,20 @@ status:
 
 quick-start: build start
 	@echo "$(GREEN)> Projet prêt en un temps record!$(NC)"
+
+# ====== CI local ======
+.PHONY: ci
+ci:
+	@set -e; \
+	echo "$(YELLOW)[CI] Stage: build$(NC)"; \
+	$(MAKE) build; \
+	echo "$(YELLOW)[CI] Stage: start$(NC)"; \
+	$(MAKE) start; \
+	echo "$(YELLOW)[CI] Stage: test$(NC)"; \
+	$(MAKE) test; \
+	echo "$(YELLOW)[CI] Stage: stop$(NC)"; \
+	$(MAKE) stop; \
+	echo "$(GREEN)[CI] Pipeline local OK ✅$(NC)"
 
 build:
 	@echo "$(YELLOW)> Build des images Docker avec cache optimisé...$(NC)"

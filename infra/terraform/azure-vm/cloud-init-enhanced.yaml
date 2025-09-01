@@ -1,0 +1,146 @@
+#cloud-config
+package_update: true
+package_upgrade: false
+packages:
+  - ca-certificates
+  - curl
+  - git
+  - make
+  - jq
+  - python3-pip
+
+write_files:
+  - path: /etc/docker/daemon.json
+    permissions: '0644'
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "10m", "max-file": "3" }
+      }
+
+  - path: /usr/local/bin/deploy-apps
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -e
+      
+      PUBLIC_IP=$(curl -s http://169.254.169.254/metadata/instance?api-version=2021-02-01 -H "Metadata: true" | jq -r '.network.interface[0].ipv4.ipAddress[0].publicIpAddress')
+      IP_DASH=$(echo $PUBLIC_IP | sed 's/\./-/g')
+      
+      cd /opt/cia
+      
+      # Generate .env.azure
+      cat > .env.azure <<EOF
+      VM_PUBLIC_IP=$PUBLIC_IP
+      APP_URL=https://app.$IP_DASH.sslip.io
+      API_URL=https://api.$IP_DASH.sslip.io
+      GRAFANA_URL=https://grafana.$IP_DASH.sslip.io
+      PORTAINER_URL=https://portainer.$IP_DASH.sslip.io
+      GITEA_URL=https://gitea.$IP_DASH.sslip.io
+      TRAEFIK_URL=https://traefik.$IP_DASH.sslip.io
+      
+      TRAEFIK_HOST=traefik.$IP_DASH.sslip.io
+      APP_HOST=app.$IP_DASH.sslip.io
+      API_HOST=api.$IP_DASH.sslip.io
+      GRAFANA_HOST=grafana.$IP_DASH.sslip.io
+      PORTAINER_HOST=portainer.$IP_DASH.sslip.io
+      GITEA_HOST=gitea.$IP_DASH.sslip.io
+      
+      GITEA_SSH_PORT=2222
+      ACME_EMAIL=admin@$IP_DASH.sslip.io
+      
+      POSTGRES_DB=cia_db
+      POSTGRES_USER=cia_user
+      POSTGRES_PASSWORD=$(openssl rand -base64 20)
+      JWT_SECRET=$(openssl rand -base64 32)
+      API_KEY=$(openssl rand -base64 32)
+      EOF
+      
+      # Create required directories
+      mkdir -p ops/traefik/acme data logs
+      
+      # Deploy ops stack
+      docker compose -f ops/docker-compose.yml -f ops/docker-compose.azure.yml up -d
+      
+      # Wait for Traefik
+      sleep 10
+      
+      # Build and deploy app stack
+      docker compose -f app/docker-compose.yml -f app/docker-compose.azure.yml build
+      docker compose -f app/docker-compose.yml -f app/docker-compose.azure.yml up -d
+      
+      echo "Deployment complete!"
+      docker ps
+
+  - path: /etc/systemd/system/deploy-apps.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Deploy CIA Applications
+      After=docker.service network-online.target
+      Wants=network-online.target
+      
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/bin/deploy-apps
+      RemainAfterExit=yes
+      StandardOutput=journal
+      StandardError=journal
+      User=${admin_username}
+      WorkingDirectory=/opt/cia
+      
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  # Install Docker
+  - bash -lc 'install -m 0755 -d /etc/apt/keyrings'
+  - bash -lc 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg'
+  - bash -lc 'chmod a+r /etc/apt/keyrings/docker.gpg'
+  - bash -lc 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" > /etc/apt/sources.list.d/docker.list'
+  - bash -lc 'apt-get update -y && apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin'
+  - bash -lc 'usermod -aG docker ${admin_username}'
+  
+  # Clone repository
+  - bash -lc 'mkdir -p /opt && chown ${admin_username}:${admin_username} /opt'
+  - bash -lc 'cd /opt && git clone --depth 1 -b ${git_repo_branch} ${git_repo_url} cia || true'
+  - bash -lc 'chown -R ${admin_username}:${admin_username} /opt/cia'
+  
+  # Create Docker network
+  - bash -lc 'docker network create traefik || true'
+  
+  # Enable and start deploy service
+  - bash -lc 'systemctl daemon-reload'
+  - bash -lc 'systemctl enable deploy-apps.service'
+  - bash -lc 'systemctl start deploy-apps.service'
+  
+  # Setup auto-update (optional)
+  - bash -lc 'echo "0 2 * * * root docker system prune -af" >> /etc/crontab'
+  
+  # Create helpful commands
+  - bash -lc 'echo "alias dc=\"docker compose\"" >> /home/${admin_username}/.bashrc'
+  - bash -lc 'echo "alias logs=\"docker compose logs -f\"" >> /home/${admin_username}/.bashrc'
+  - bash -lc 'echo "alias status=\"docker ps\"" >> /home/${admin_username}/.bashrc'
+  
+  # MOTD
+  - bash -lc 'cat >/etc/motd <<EOF
+  
+========================================
+    CIA Azure Infrastructure
+========================================
+Docker and Docker Compose are installed.
+Repository: /opt/cia
+
+Quick Commands:
+  dc         - Docker Compose alias
+  logs       - Show container logs
+  status     - Show container status
+  
+Services are auto-deployed on boot.
+Check status: systemctl status deploy-apps
+
+Access your services at:
+  https://app.$(curl -s http://169.254.169.254/metadata/instance?api-version=2021-02-01 -H "Metadata: true" | jq -r ".network.interface[0].ipv4.ipAddress[0].publicIpAddress" | sed "s/\./-/g").sslip.io
+========================================
+
+EOF'

@@ -62,11 +62,29 @@ ops/loki/data/
 *.csr
 !ops/traefik/certs/.gitkeep
 
+# Terraform
+.terraform/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+tfplan
+*.tfvars
+*.tfvars.json
+
 # Temporary files
 *.tmp
 *.bak
 *.backup
 *.old
+
+# Local env artifacts
+vault-tokens.env
+.env.azure.generated
 
 # Python
 __pycache__/

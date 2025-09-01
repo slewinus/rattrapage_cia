@@ -151,6 +151,7 @@ make restart     # Redémarre tous les services
 make status      # Affiche l'état des services
 make logs        # Affiche les logs en temps réel
 make test        # Lance les tests de santé
+make ci          # Pipeline local (build → start → test → stop)
 ```
 
 ### Build et maintenance
@@ -166,6 +167,42 @@ make shell-api   # Shell dans le container API
 make shell-db    # Console MySQL
 make shell-gitea # Shell dans le container Gitea
 ```
+
+## Scripts
+
+Les scripts utilitaires sont centralisés dans `scripts/` pour éviter la dispersion à la racine :
+
+- `scripts/demo-presentation.sh` — démo de l'infra et services WOW
+- `scripts/migrate-secrets-api.sh` — migration des secrets via API Vault
+- `scripts/migrate-secrets-to-vault.sh` — migration via CLI Vault + policies/tokens
+- `scripts/azure-deploy.sh` — déploiement Azure (Terraform + Compose)
+- `scripts/gen-azure-env.sh` — génération de `.env` pour Azure
+
+## CI/CD local (bateau)
+
+Pour valider juste que le pipeline « passe » en local :
+
+- `make ci` exécute build → start → test → stop avec sortie claire des étapes.
+- `scripts/ci-local.sh` fait la même chose et nettoie même en cas d’erreur.
+
+Exemples:
+```bash
+make ci
+# ou
+scripts/ci-local.sh
+```
+
+### Intégration dans Gitea (Actions)
+
+Pour voir les tests directement dans l’interface Gitea :
+
+- Activez Gitea Actions (Gitea ≥ 1.19, déjà supporté par l’image).
+- Générez un token d’inscription runner: Admin Gitea → Actions → Runners → New Registration Token.
+- Placez le token dans `.env` → `GITEA_RUNNER_REGISTRATION_TOKEN=...`.
+- Redémarrez l’ops: `docker compose -p cia-ops -f ops/docker-compose.yml up -d gitea-runner`.
+- Le workflow `.gitea/workflows/ci.yml` lance `make ci` à chaque push/PR.
+
+Le runner utilise l’étiquette `runs-on: docker`. Vous pouvez changer les labels via `GITEA_RUNNER_LABELS`.
 
 ### Gitea
 ```bash

@@ -1,0 +1,14 @@
+name: ${COMPOSE_PROJECT_NAME:-cia-app}
+
+services:
+  api:
+    labels:
+      traefik.http.routers.api.rule: "Host(`${API_HOST}`)"
+      traefik.http.routers.api.tls.certresolver: "le"
+
+  web:
+    labels:
+      traefik.http.routers.app.rule: "Host(`${APP_HOST}`)"
+      traefik.http.routers.app-api.rule: "Host(`${APP_HOST}`) && PathPrefix(`/api`)"
+      traefik.http.routers.app.tls.certresolver: "le"
+      traefik.http.routers.app-api.tls.certresolver: "le"

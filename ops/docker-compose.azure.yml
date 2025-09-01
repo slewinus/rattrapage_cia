@@ -1,0 +1,42 @@
+name: cia-ops
+
+services:
+  traefik:
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+      - --entryPoints.web.address=:80
+      - --entryPoints.websecure.address=:443
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/acme/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+    volumes:
+      - ./traefik/acme:/acme
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "traefik"
+      traefik.http.routers.dashboard.rule: "Host(`${TRAEFIK_HOST}`)"
+      traefik.http.routers.dashboard.entrypoints: "websecure"
+      traefik.http.routers.dashboard.tls: "true"
+      traefik.http.routers.dashboard.tls.certresolver: "le"
+      traefik.http.routers.dashboard.service: "api@internal"
+
+  grafana:
+    labels:
+      traefik.http.routers.grafana.rule: "Host(`${GRAFANA_HOST}`)"
+      traefik.http.routers.grafana.tls.certresolver: "le"
+
+  portainer:
+    labels:
+      traefik.http.routers.portainer.rule: "Host(`${PORTAINER_HOST}`)"
+      traefik.http.routers.portainer.tls.certresolver: "le"
+
+  gitea:
+    environment:
+      GITEA__server__DOMAIN: "${GITEA_HOST}"
+      GITEA__server__SSH_DOMAIN: "${GITEA_HOST}"
+      GITEA__server__ROOT_URL: "https://${GITEA_HOST}:${TRAEFIK_HTTPS_PORT:-443}/"
+    labels:
+      traefik.http.routers.gitea.rule: "Host(`${GITEA_HOST}`)"
+      traefik.http.middlewares.gitea-headers.headers.customrequestheaders.X-Forwarded-Host: "${GITEA_HOST}"
+      traefik.http.routers.gitea.tls.certresolver: "le"

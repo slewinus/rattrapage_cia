@@ -1,0 +1,21 @@
+name: Local CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: docker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Local pipeline
+        run: |
+          make ci
+
