@@ -161,7 +161,8 @@ cloud-open:
 	 echo "  API:       https://api.$${IP//./-}.sslip.io"; \
 	 echo "  Grafana:   https://grafana.$${IP//./-}.sslip.io"; \
 	 echo "  Portainer: https://portainer.$${IP//./-}.sslip.io"; \
-	 echo "  Gitea:     https://gitea.$${IP//./-}.sslip.io"
+	 echo "  Gitea:     https://gitea.$${IP//./-}.sslip.io";  \
+	 echo "  Traefik:   https://traefik.$${IP//./-}.sslip.io"
 
 cloud-destroy:
 	@echo "$(YELLOW)> Destruction de l'infrastructure Azure...$(NC)"
