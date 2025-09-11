@@ -42,10 +42,10 @@ help:
 	@echo "  $(GREEN)make cloud-destroy$(NC)-> Détruit l'infra Azure (Terraform destroy)"
 	@echo ""
 	@echo "$(YELLOW)> URLs d'accès:$(NC)"
-	@echo "  Frontend:  $(GREEN)https://app.localhost$(NC)"
-	@echo "  Grafana:   $(GREEN)https://grafana.localhost$(NC) (admin/GrafanaAdmin2025!)"
-	@echo "  Gitea:     $(GREEN)https://gitea.localhost$(NC)"
-	@echo "  Portainer: $(GREEN)https://portainer.localhost$(NC)"
+	@echo "  Frontend:  $(GREEN)https://app.localhost:8443$(NC)"
+	@echo "  Grafana:   $(GREEN)https://grafana.localhost:8443$(NC) (admin/GrafanaAdmin2025!)"
+	@echo "  Gitea:     $(GREEN)https://gitea.localhost:8443$(NC)"
+	@echo "  Portainer: $(GREEN)https://portainer.localhost:8443$(NC)"
 	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
 
 # ====== Commandes principales ======
@@ -54,10 +54,10 @@ start: ops-up app-up
 	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
 	@echo "$(GREEN)OK Application démarrée avec succès!$(NC)"
 	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
-	@echo "  Frontend:  $(GREEN)https://app.localhost$(NC)"
-	@echo "  Grafana:   $(GREEN)https://grafana.localhost$(NC)"
-	@echo "  Gitea:     $(GREEN)https://gitea.localhost$(NC)"
-	@echo "  Portainer: $(GREEN)https://portainer.localhost$(NC)"
+	@echo "  Frontend:  $(GREEN)https://app.localhost:8443$(NC)"
+	@echo "  Grafana:   $(GREEN)https://grafana.localhost:8443$(NC)"
+	@echo "  Gitea:     $(GREEN)https://gitea.localhost:8443$(NC)"
+	@echo "  Portainer: $(GREEN)https://portainer.localhost:8443$(NC)"
 	@echo "$(GREEN)═══════════════════════════════════════════════════════════$(NC)"
 
 stop: app-down ops-down
