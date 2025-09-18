@@ -235,21 +235,3 @@ make clean
 # Supprime aussi les volumes (ATTENTION: perte de données)
 docker volume prune -f
 ```
-
-##  Notes importantes
-
-1. **Sécurité** : Changez tous les mots de passe en production
-2. **Performances** : Les images utilisent Alpine Linux pour réduire la taille
-3. **Cache** : Docker BuildKit est activé pour des builds plus rapides
-4. **Logs** : Tous les logs sont centralisés dans Loki via Promtail
-
-## Support
-
-Pour toute question ou problème :
-1. Vérifiez les logs : `make logs`
-2. Consultez l'état : `make status`
-3. Redémarrez si nécessaire : `make restart`
-
----
-
-📌 **Quick Start**: `make quick-start` pour tout lancer en une commande !
